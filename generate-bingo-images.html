@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генерация изображений бинго-листов</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="videolist.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 5px;
+            min-height: 50px;
+        }
+        
+        button {
+            background: #10B981;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        
+        button:hover {
+            background: #059669;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .progress {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: #10B981;
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .bingo-sheet {
+            width: 1920px;
+            height: 1080px;
+            aspect-ratio: 16 / 9;
+            background: linear-gradient(135deg, #1E3A8A, #6B46C1);
+            border: 4px solid #10B981;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            margin: 20px;
+            position: absolute;
+            left: -9999px;
+        }
+        
+        .bingo-sheet-header {
+            text-align: center;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+        
+        .bingo-sheet-header h1 {
+            font-size: 3rem;
+            color: white;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .bingo-sheet-number {
+            font-size: 2rem;
+            color: #10B981;
+            font-weight: bold;
+        }
+        
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 10px;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        .bingo-cell {
+            background: white;
+            border: 2px solid #10B981;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1E3A8A;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Генерация изображений бинго-листов</h1>
+        <div class="status" id="status">Готов к генерации. Нажмите кнопку для начала.</div>
+        <div class="progress">
+            <div class="progress-bar" id="progressBar">0%</div>
+        </div>
+        <button id="generateBtn" onclick="generateAllImages()">Сгенерировать все 40 изображений</button>
+        <div id="sheetsContainer"></div>
+    </div>
+    
+    <script>
+        // Функция для парсинга названия песни из имени файла
+        function parseSongTitle(fileName) {
+            const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
+            const parts = nameWithoutExt.split('-');
+            
+            if (parts.length >= 2) {
+                const songTitle = parts[1].replace(/_/g, ' ');
+                return songTitle;
+            }
+            return fileName;
+        }
+        
+        // Функция для перемешивания массива (Fisher-Yates)
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+        
+        // Функция для генерации уникального набора песен
+        function generateUniqueCombination(allSongs, usedCombinations) {
+            let attempts = 0;
+            let selectedSongs;
+            
+            do {
+                const shuffled = shuffleArray(allSongs);
+                selectedSongs = shuffled.slice(0, 30).sort();
+                attempts++;
+                
+                const combinationKey = selectedSongs.join('|');
+                
+                if (!usedCombinations.has(combinationKey)) {
+                    usedCombinations.add(combinationKey);
+                    return shuffled.slice(0, 30);
+                }
+            } while (attempts < 1000);
+            
+            return shuffleArray(allSongs).slice(0, 30);
+        }
+        
+        // Создание всех бинго-листов
+        function createAllSheets() {
+            const container = document.getElementById('sheetsContainer');
+            container.innerHTML = '';
+            
+            const allSongs = [];
+            for (let i = 1; i <= 40; i++) {
+                if (VIDEO_LIST[i]) {
+                    const songTitle = parseSongTitle(VIDEO_LIST[i]);
+                    allSongs.push(songTitle);
+                }
+            }
+            
+            const usedCombinations = new Set();
+            const sheets = [];
+            
+            for (let sheetNum = 1; sheetNum <= 40; sheetNum++) {
+                const selectedSongs = generateUniqueCombination(allSongs, usedCombinations);
+                
+                const sheet = document.createElement('div');
+                sheet.className = 'bingo-sheet';
+                sheet.id = `sheet-${sheetNum}`;
+                
+                const header = document.createElement('div');
+                header.className = 'bingo-sheet-header';
+                header.innerHTML = `
+                    <h1>Музыкальное Бинго</h1>
+                    <div class="bingo-sheet-number">Вариант ${sheetNum}</div>
+                `;
+                
+                const grid = document.createElement('div');
+                grid.className = 'bingo-grid';
+                
+                for (let i = 0; i < 30; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'bingo-cell';
+                    cell.textContent = selectedSongs[i] || '';
+                    grid.appendChild(cell);
+                }
+                
+                sheet.appendChild(header);
+                sheet.appendChild(grid);
+                container.appendChild(sheet);
+                sheets.push(sheet);
+            }
+            
+            return sheets;
+        }
+        
+        // Генерация изображения для одного листа
+        async function generateImage(sheet, index) {
+            return new Promise((resolve, reject) => {
+                html2canvas(sheet, {
+                    scale: 2,
+                    backgroundColor: null,
+                    logging: false,
+                    useCORS: true
+                }).then(canvas => {
+                    canvas.toBlob((blob) => {
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `bingo-sheet-${index + 1}.png`;
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        resolve();
+                    }, 'image/png');
+                }).catch(reject);
+            });
+        }
+        
+        // Генерация всех изображений
+        async function generateAllImages() {
+            const btn = document.getElementById('generateBtn');
+            const status = document.getElementById('status');
+            const progressBar = document.getElementById('progressBar');
+            
+            btn.disabled = true;
+            status.textContent = 'Создание бинго-листов...';
+            
+            const sheets = createAllSheets();
+            
+            // Ждем немного, чтобы листы отрендерились
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            status.textContent = 'Генерация изображений...';
+            
+            for (let i = 0; i < sheets.length; i++) {
+                try {
+                    await generateImage(sheets[i], i);
+                    const progress = ((i + 1) / sheets.length) * 100;
+                    progressBar.style.width = progress + '%';
+                    progressBar.textContent = Math.round(progress) + '%';
+                    status.textContent = `Генерация изображения ${i + 1} из ${sheets.length}...`;
+                    
+                    // Небольшая задержка между генерациями
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                } catch (error) {
+                    console.error(`Ошибка при генерации изображения ${i + 1}:`, error);
+                }
+            }
+            
+            status.textContent = `Готово! Сгенерировано ${sheets.length} изображений. Они должны были автоматически скачаться.`;
+            progressBar.style.width = '100%';
+            progressBar.textContent = '100%';
+            btn.disabled = false;
+        }
+        
+        // Инициализация при загрузке
+        if (typeof VIDEO_LIST !== 'undefined') {
+            document.getElementById('status').textContent = 'Готов к генерации. Нажмите кнопку для начала.';
+        } else {
+            window.addEventListener('load', () => {
+                if (typeof VIDEO_LIST !== 'undefined') {
+                    document.getElementById('status').textContent = 'Готов к генерации. Нажмите кнопку для начала.';
+                } else {
+                    document.getElementById('status').textContent = 'Ошибка: не удалось загрузить список видео.';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+

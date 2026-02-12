@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Музыкальное Бинго - Школа 21</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="videolist.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <img src="шк_лог.png" alt="Школа 21" class="school-logo">
+                <h1>Музыкальное Бинго</h1>
+            </div>
+        </header>
+
+        <div class="bingo-grid" id="bingoGrid">
+            <!-- Карточки будут добавлены через JavaScript -->
+        </div>
+
+        <div class="modal" id="cardModal">
+            <div class="modal-content">
+                <button class="close-btn" id="closeBtn">&times;</button>
+                <div class="video-container" id="videoContainer">
+                    <video id="cardVideo" controls autoplay>
+                        Ваш браузер не поддерживает видео.
+                    </video>
+                    <div class="upload-area" id="uploadArea" style="display: none;">
+                        <div class="upload-text">
+                            <p>⚠️ Видео не найдено</p>
+                            <p class="upload-hint">Поместите файл в папку videos</p>
+                        </div>
+                    </div>
+                    <div class="video-info" id="videoInfo" style="display: none;">
+                        <div class="song-title" id="songTitle"></div>
+                        <div class="song-artist" id="songArtist"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+

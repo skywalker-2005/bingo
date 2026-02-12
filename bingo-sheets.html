@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Бинго-листы - Музыкальное Бинго</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="videolist.js"></script>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 30;
+        }
+        
+        body {
+            background: white;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        .bingo-sheets-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            padding: 10px;
+            height: 100vh;
+            width: 100vw;
+            box-sizing: border-box;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .bingo-sheet.hidden {
+            display: none;
+        }
+        
+        .bingo-sheet.visible {
+            display: flex;
+        }
+        
+        .bingo-sheet {
+            width: calc(100vw - 20px);
+            height: calc(100vh - 20px);
+            max-width: calc((100vh - 20px) * 16 / 9);
+            max-height: calc((100vw - 20px) * 9 / 16);
+            aspect-ratio: 16 / 9;
+            background: linear-gradient(135deg, var(--school-dark-blue), var(--school-purple));
+            border: 4px solid var(--school-green);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        
+        .bingo-sheet-header {
+            text-align: center;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+        
+        .bingo-sheet-header h1 {
+            font-size: 2rem;
+            color: var(--school-white);
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .bingo-sheet-number {
+            font-size: 1.2rem;
+            color: var(--school-green);
+            font-weight: bold;
+        }
+        
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 6px;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        .bingo-cell {
+            background: var(--school-white);
+            border: 2px solid var(--school-green);
+            border-radius: 6px;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--school-dark-blue);
+            transition: all 0.2s ease;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .bingo-cell:hover {
+            background: var(--school-green);
+            color: var(--school-white);
+            transform: scale(1.05);
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .bingo-sheet {
+                page-break-after: always;
+                page-break-inside: avoid;
+                margin-bottom: 0;
+            }
+            
+            .bingo-sheets-container {
+                padding: 0;
+                gap: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bingo-sheets-container" id="bingoSheets"></div>
+    
+    <script>
+        let currentSheetIndex = 0;
+        const totalSheets = 40;
+        let sheets = [];
+        
+        // Функция для показа конкретного листа
+        function showSheet(index) {
+            // Скрываем все листы
+            sheets.forEach((sheet, i) => {
+                if (i === index) {
+                    sheet.classList.remove('hidden');
+                    sheet.classList.add('visible');
+                } else {
+                    sheet.classList.add('hidden');
+                    sheet.classList.remove('visible');
+                }
+            });
+            
+            // Прокручиваем к текущему листу
+            sheets[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        // Показать предыдущий лист
+        function showPreviousSheet() {
+            if (currentSheetIndex > 0) {
+                currentSheetIndex--;
+                showSheet(currentSheetIndex);
+            }
+        }
+        
+        // Показать следующий лист
+        function showNextSheet() {
+            if (currentSheetIndex < totalSheets - 1) {
+                currentSheetIndex++;
+                showSheet(currentSheetIndex);
+            }
+        }
+        
+        // Обработка клавиатуры
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                showPreviousSheet();
+            } else if (e.key === 'ArrowRight') {
+                showNextSheet();
+            }
+        });
+        
+        // Функция для парсинга названия песни из имени файла
+        function parseSongTitle(fileName) {
+            const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
+            const parts = nameWithoutExt.split('-');
+            
+            if (parts.length >= 2) {
+                const songTitle = parts[1].replace(/_/g, ' ');
+                return songTitle;
+            }
+            return fileName;
+        }
+        
+        // Функция для перемешивания массива (Fisher-Yates)
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+        
+        // Функция для генерации уникального набора песен
+        function generateUniqueCombination(allSongs, usedCombinations) {
+            let attempts = 0;
+            let selectedSongs;
+            
+            do {
+                // Перемешиваем и берем 30 песен
+                const shuffled = shuffleArray(allSongs);
+                selectedSongs = shuffled.slice(0, 30).sort(); // Сортируем для сравнения
+                attempts++;
+                
+                // Проверяем уникальность по отсортированному массиву
+                const combinationKey = selectedSongs.join('|');
+                
+                if (!usedCombinations.has(combinationKey)) {
+                    usedCombinations.add(combinationKey);
+                    return shuffled.slice(0, 30); // Возвращаем в исходном порядке
+                }
+            } while (attempts < 1000); // Защита от бесконечного цикла
+            
+            // Если не удалось создать уникальный набор, возвращаем любой
+            return shuffleArray(allSongs).slice(0, 30);
+        }
+        
+        // Создание бинго-листов
+        function createBingoSheets() {
+            const container = document.getElementById('bingoSheets');
+            
+            // Получаем список всех песен
+            const allSongs = [];
+            for (let i = 1; i <= 40; i++) {
+                if (VIDEO_LIST[i]) {
+                    const songTitle = parseSongTitle(VIDEO_LIST[i]);
+                    allSongs.push(songTitle);
+                }
+            }
+            
+            // Множество для отслеживания использованных комбинаций
+            const usedCombinations = new Set();
+            
+            // Создаем 40 разных вариантов
+            for (let sheetNum = 1; sheetNum <= 40; sheetNum++) {
+                // Генерируем уникальный набор из 30 песен
+                const selectedSongs = generateUniqueCombination(allSongs, usedCombinations);
+                
+                // Создаем лист
+                const sheet = document.createElement('div');
+                sheet.className = 'bingo-sheet';
+                
+                const header = document.createElement('div');
+                header.className = 'bingo-sheet-header';
+                header.innerHTML = `
+                    <h1>Музыкальное Бинго</h1>
+                    <div class="bingo-sheet-number">Вариант ${sheetNum}</div>
+                `;
+                
+                const grid = document.createElement('div');
+                grid.className = 'bingo-grid';
+                
+                // Создаем 30 ячеек (6 колонок x 5 строк)
+                for (let i = 0; i < 30; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'bingo-cell';
+                    cell.textContent = selectedSongs[i] || '';
+                    grid.appendChild(cell);
+                }
+                
+                sheet.appendChild(header);
+                sheet.appendChild(grid);
+                container.appendChild(sheet);
+                sheets.push(sheet);
+            }
+            
+            // Показываем первый лист
+            showSheet(0);
+        }
+        
+        // Запускаем создание листов после загрузки
+        if (typeof VIDEO_LIST !== 'undefined') {
+            createBingoSheets();
+        } else {
+            window.addEventListener('load', () => {
+                if (typeof VIDEO_LIST !== 'undefined') {
+                    createBingoSheets();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+

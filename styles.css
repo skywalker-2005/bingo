@@ -1,0 +1,370 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --school-purple: #6B46C1;
+    --school-green: #10B981;
+    --school-dark-blue: #1E3A8A;
+    --school-white: #FFFFFF;
+    --card-bg: rgba(107, 70, 193, 0.1);
+    --card-border: rgba(107, 70, 193, 0.3);
+    --hover-shadow: 0 8px 32px rgba(107, 70, 193, 0.4);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--school-dark-blue) 0%, var(--school-purple) 50%, var(--school-dark-blue) 100%);
+    height: 100vh;
+    width: 100vw;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    color: var(--school-white);
+}
+
+.container {
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+header {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 10px;
+    border: 2px solid var(--card-border);
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.school-logo {
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    margin: 0;
+    background: linear-gradient(45deg, var(--school-green), var(--school-white));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
+    font-weight: bold;
+}
+
+.bingo-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 8px;
+    flex: 1;
+    min-height: 0;
+}
+
+.bingo-card {
+    background: var(--card-bg);
+    border: 2px solid var(--card-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(5px);
+    min-height: 0;
+}
+
+.bingo-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(107, 70, 193, 0.2) 0%, 
+        rgba(16, 185, 129, 0.2) 50%, 
+        rgba(30, 58, 138, 0.2) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.bingo-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    border-color: var(--school-green);
+    box-shadow: var(--hover-shadow);
+}
+
+.bingo-card:hover::before {
+    opacity: 1;
+}
+
+.bingo-card.inactive {
+    opacity: 0;
+    pointer-events: none;
+    cursor: default;
+}
+
+.bingo-card.inactive:hover {
+    transform: none;
+    border-color: var(--card-border);
+    box-shadow: none;
+}
+
+.card-number {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--school-white);
+    z-index: 1;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.6);
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.card-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+    display: none;
+}
+
+.bingo-card.has-video .card-preview {
+    display: block;
+}
+
+.bingo-card.has-video .card-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 1rem;
+    z-index: 2;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.modal-content {
+    position: relative;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 95vh;
+    background: linear-gradient(135deg, var(--school-dark-blue), var(--school-purple));
+    border-radius: 20px;
+    padding: 15px;
+    border: 3px solid var(--school-green);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: slideIn 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+@keyframes slideIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: var(--school-green);
+    color: var(--school-white);
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1001;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-btn:hover {
+    background: var(--school-purple);
+    transform: rotate(90deg);
+}
+
+
+.video-container {
+    width: 100%;
+    position: relative;
+    border-radius: 15px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.video-container > video {
+    flex-shrink: 0;
+}
+
+#cardVideo {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    display: none;
+    background: #000;
+    object-fit: contain;
+    max-height: calc(95vh - 200px);
+}
+
+#cardVideo.active {
+    display: block;
+}
+
+.video-info {
+    padding: 20px;
+    background: var(--school-white);
+    text-align: center;
+    border-radius: 0 0 15px 15px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.song-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--school-dark-blue);
+    margin-bottom: 10px;
+    line-height: 1.2;
+}
+
+.song-artist {
+    font-size: 1.8rem;
+    color: var(--school-purple);
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.upload-area {
+    width: 100%;
+    height: 100%;
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 3px dashed var(--school-green);
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.upload-area:hover {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--school-white);
+}
+
+.upload-area.hidden {
+    display: none;
+}
+
+.upload-text {
+    text-align: center;
+}
+
+.upload-text p {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    color: var(--school-white);
+}
+
+.upload-hint {
+    font-size: 1rem;
+    color: var(--school-green);
+    opacity: 0.8;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 2rem;
+    }
+    
+    .bingo-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 15px;
+    }
+    
+    .video-container,
+    #cardVideo,
+    .upload-area {
+        min-height: 300px;
+    }
+}
+
